@@ -132,4 +132,4 @@ Authors
 License
 -------
 
-*Tideland Go Testing Support* is distributed under the terms of the BSD 3-Clause license.
+*Tideland Go Application Support* is distributed under the terms of the BSD 3-Clause license.
