@@ -11,12 +11,13 @@ always need. See their descriptions below.
 Installation
 ------------
 
-    go get git.tideland.biz/goas/errors
-    go get git.tideland.biz/goas/identifier
-    go get git.tideland.biz/goas/logger
-    go get git.tideland.biz/goas/loop
-    go get git.tideland.biz/goas/monitoring
-    go get git.tideland.biz/goas/timex
+    go get github.com/tideland/goas/v3/errors
+    go get github.com/tideland/goas/v2/identifier
+    go get github.com/tideland/goas/v2/logger
+    go get github.com/tideland/goas/v2/loop
+    go get github.com/tideland/goas/v2/monitoring
+    go get github.com/tideland/goas/v1/scroller
+    go get github.com/tideland/goas/v2/times
 
 Usage
 -----
