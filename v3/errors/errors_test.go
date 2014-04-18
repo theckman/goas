@@ -27,13 +27,14 @@ func TestValidation(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, true)
 
 	ec := 1
-	err := errors.New(ec, "valid")
+	messages := errors.Messages{ec: "valid"}
+	err := errors.New(ec, messages)
 	fileName, line, lerr := errors.Location(err)
 
 	assert.True(errors.Valid(err))
 	assert.Nil(lerr)
 	assert.Equal(fileName, "errors_test.go")
-	assert.Equal(line, 30)
+	assert.Equal(line, 31)
 }
 
 // Test the annotation of errors.
@@ -41,8 +42,9 @@ func TestAnnotation(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, true)
 
 	ec := 123
+	messages := errors.Messages{ec: "annotated"}
 	aerr := testError("wrapped")
-	err := errors.Annotate(aerr, ec, "annotated")
+	err := errors.Annotate(aerr, ec, messages)
 
 	assert.ErrorMatch(err, `\[E123\] annotated: wrapped`)
 	assert.Equal(errors.Annotated(err), aerr)
@@ -55,7 +57,8 @@ func TestIsError(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, true)
 
 	ec := 42
-	err := errors.New(ec, "test error %d", 1)
+	messages := errors.Messages{ec: "test error %d"}
+	err := errors.New(ec, messages, 1)
 
 	assert.ErrorMatch(err, `\[E042\] test error 1`)
 	assert.True(errors.IsError(err, ec))
