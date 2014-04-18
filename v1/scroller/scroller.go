@@ -55,7 +55,7 @@ type Option func(s *Scroller) error
 func Lines(l int) Option {
 	return func(s *Scroller) error {
 		if l < 0 {
-			return errors.New(ecNegativeLines, msgNegativeLines, l)
+			return errors.New(ErrNegativeLines, errorMessages, l)
 		}
 		s.lines = l
 		return nil
@@ -115,10 +115,10 @@ type Scroller struct {
 // size and the poll time.
 func NewScroller(source io.ReadSeeker, target io.Writer, options ...Option) (*Scroller, error) {
 	if source == nil {
-		return nil, errors.New(ecNoSource, msgNoSource)
+		return nil, errors.New(ErrNoSource, errorMessages)
 	}
 	if target == nil {
-		return nil, errors.New(ecNoTarget, msgNoTarget)
+		return nil, errors.New(ErrNoTarget, errorMessages)
 	}
 	s := &Scroller{
 		source:     source,
