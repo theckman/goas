@@ -24,11 +24,12 @@ import (
 //--------------------
 
 const (
-	ecNoError = iota
-	ecCrontabCannotBeRecovered
-
-	msgCrontabCannotBeRecovered = "crontab cannot be recovered: %v"
+	ErrCrontabCannotBeRecovered = iota + 1
 )
+
+var errorMessages = errors.Messages{
+	ErrCrontabCannotBeRecovered: "crontab cannot be recovered: %v",
+}
 
 //--------------------
 // RANGES
@@ -221,7 +222,7 @@ func (c *Crontab) backendLoop(l loop.Loop) error {
 func (c *Crontab) checkRecovering(rs loop.Recoverings) (loop.Recoverings, error) {
 	if rs.Frequency(12, time.Minute) {
 		logger.Errorf("crontab cannot be recovered: %v", rs.Last().Reason)
-		return nil, errors.New(ecCrontabCannotBeRecovered, msgCrontabCannotBeRecovered, rs.Last().Reason)
+		return nil, errors.New(ErrCrontabCannotBeRecovered, errorMessages, rs.Last().Reason)
 	}
 	logger.Warningf("crontab recovered: %v", rs.Last().Reason)
 	return rs.Trim(12), nil

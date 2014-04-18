@@ -20,15 +20,16 @@ import (
 //--------------------
 
 const (
-	ecNoError = iota
-	ecNoSource
-	ecNoTarget
-	ecNegativeLines
-
-	msgNoSource      = "cannot start scroller: no source"
-	msgNoTarget      = "cannot start scroller: no target"
-	msgNegativeLines = "negative number of lines not allowed: %d"
+	ErrNoSource = iota + 1
+	ErrNoTarget
+	ErrNegativeLines
 )
+
+var errorMessages = errors.Messages{
+	ErrNoSource:      "cannot start scroller: no source",
+	ErrNoTarget:      "cannot start scroller: no target",
+	ErrNegativeLines: "negative number of lines not allowed: %d",
+}
 
 //--------------------
 // TESTING
@@ -37,19 +38,19 @@ const (
 // IsNoSourceError returns true, if the error signals that
 // no source has been passed.
 func IsNoSourceError(err error) bool {
-	return errors.IsError(err, ecNoSource)
+	return errors.IsError(err, ErrNoSource)
 }
 
 // IsNoTargetError returns true, if the error signals that
 // no target has been passed.
 func IsNoTargetError(err error) bool {
-	return errors.IsError(err, ecNoTarget)
+	return errors.IsError(err, ErrNoTarget)
 }
 
 // IsNegativeLinesError returns true, if the error shows the
 // setting of a negative number of lines to start with.
 func IsNegativeLinesError(err error) bool {
-	return errors.IsError(err, ecNegativeLines)
+	return errors.IsError(err, ErrNegativeLines)
 }
 
 // EOF
