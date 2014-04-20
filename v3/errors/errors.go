@@ -27,10 +27,14 @@ type Messages map[int]string
 // Format returns the formatted error message for code with the
 // given arguments.
 func (m Messages) Format(code int, args ...interface{}) string {
-	format, ok := m[code]
-	if !ok {
-		return fmt.Sprintf("[E999] invalid error code '%d'")
+	if m == nil || m[code] == "" {
+		if len(args) == 0 {
+			return fmt.Sprintf("[E999] invalid error code '%d'")
+		}
+		format := fmt.Sprintf("%v", args[0])
+		return fmt.Sprintf(format, args[1:]...)
 	}
+	format := m[code]
 	return fmt.Sprintf(format, args...)
 }
 
