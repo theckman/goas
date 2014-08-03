@@ -69,7 +69,7 @@ func TestVersion(t *testing.T) {
 			metadata:   "",
 		}, {
 			id:         "v1.2.3+007.a",
-			vsn:        version.New(1, 2, 3, version.METADATA, "007", "a"),
+			vsn:        version.New(1, 2, 3, version.Metadata, "007", "a"),
 			major:      1,
 			minor:      2,
 			patch:      3,
@@ -77,7 +77,7 @@ func TestVersion(t *testing.T) {
 			metadata:   "007.a",
 		}, {
 			id:         "v1.2.3-alpha+007.a",
-			vsn:        version.New(1, 2, 3, "alpha", version.METADATA, "007", "a"),
+			vsn:        version.New(1, 2, 3, "alpha", version.Metadata, "007", "a"),
 			major:      1,
 			minor:      2,
 			patch:      3,
@@ -146,20 +146,20 @@ func TestLess(t *testing.T) {
 			vsnB: version.New(1, 2, 3, "alpha", "4711"),
 			less: true,
 		}, {
-			vsnA: version.New(1, 2, 3, version.METADATA, "alpha", "1"),
-			vsnB: version.New(1, 2, 3, version.METADATA, "alpha", "2"),
+			vsnA: version.New(1, 2, 3, version.Metadata, "alpha", "1"),
+			vsnB: version.New(1, 2, 3, version.Metadata, "alpha", "2"),
 			less: false,
 		}, {
-			vsnA: version.New(1, 2, 3, version.METADATA, "alpha", "2"),
-			vsnB: version.New(1, 2, 3, version.METADATA, "alpha", "1"),
+			vsnA: version.New(1, 2, 3, version.Metadata, "alpha", "2"),
+			vsnB: version.New(1, 2, 3, version.Metadata, "alpha", "1"),
 			less: false,
 		}, {
-			vsnA: version.New(1, 2, 3, "alpha", version.METADATA, "alpha", "2"),
-			vsnB: version.New(1, 2, 3, "alpha", version.METADATA, "alpha", "1"),
+			vsnA: version.New(1, 2, 3, "alpha", version.Metadata, "alpha", "2"),
+			vsnB: version.New(1, 2, 3, "alpha", version.Metadata, "alpha", "1"),
 			less: false,
 		}, {
-			vsnA: version.New(1, 2, 3, "alpha", "48", version.METADATA, "alpha", "2"),
-			vsnB: version.New(1, 2, 3, "alpha", "4711", version.METADATA, "alpha", "1"),
+			vsnA: version.New(1, 2, 3, "alpha", "48", version.Metadata, "alpha", "2"),
+			vsnB: version.New(1, 2, 3, "alpha", "4711", version.Metadata, "alpha", "1"),
 			less: true,
 		}, {
 			vsnA: version.New(1, 2, 3, "alpha", "2"),

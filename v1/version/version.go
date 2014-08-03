@@ -22,7 +22,7 @@ import (
 //--------------------
 
 const (
-	METADATA = "+"
+	Metadata = "+"
 )
 
 //--------------------
@@ -63,7 +63,7 @@ type vsn struct {
 
 // New returns a simple version instance. Parts of pre-release
 // and metadata are passed as optional strings separated by
-// version.METADATA ("+").
+// version.Metadata ("+").
 func New(major, minor, patch int, prmds ...string) Version {
 	if major < 0 {
 		major = 0
@@ -82,7 +82,7 @@ func New(major, minor, patch int, prmds ...string) Version {
 	isPR := true
 	for _, prmd := range prmds {
 		if isPR {
-			if prmd == METADATA {
+			if prmd == Metadata {
 				isPR = false
 				continue
 			}
