@@ -1,8 +1,9 @@
 # Tideland Go Application Support
 
-## 2014-08-02
+## 2014-08-03
 
 - Added v1.0.0 of the version package
+- Added `PackageVersion()` to all packages
 
 ## 2014-04-18
 

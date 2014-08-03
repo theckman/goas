@@ -14,6 +14,7 @@ package timex
 import (
 	"time"
 
+	"github.com/tideland/goas/v1/version"
 	"github.com/tideland/goas/v2/logger"
 	"github.com/tideland/goas/v2/loop"
 	"github.com/tideland/goas/v3/errors"
@@ -29,6 +30,15 @@ const (
 
 var errorMessages = errors.Messages{
 	ErrCrontabCannotBeRecovered: "crontab cannot be recovered: %v",
+}
+
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(2, 1, 0)
 }
 
 //--------------------

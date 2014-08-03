@@ -19,7 +19,18 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
+
+	"github.com/tideland/goas/v1/version"
 )
+
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(2, 1, 0)
+}
 
 //--------------------
 // UUID
