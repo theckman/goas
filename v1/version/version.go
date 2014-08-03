@@ -29,6 +29,11 @@ const (
 // VERSION
 //--------------------
 
+// PackageVersion returns the version of the version package.
+func PackageVersion() Version {
+	return New(1, 0, 0)
+}
+
 // Version defines the interface of a version.
 type Version interface {
 	fmt.Stringer
@@ -160,11 +165,6 @@ func (v *vsn) String() string {
 		vs += "+" + v.Metadata()
 	}
 	return vs
-}
-
-// PackageVersion returns the version of the version package.
-func PackageVersion() Version {
-	return New(1, 0, 0)
 }
 
 //--------------------
