@@ -183,7 +183,7 @@ func validID(id string, numeric bool) string {
 		case r >= 'a' && r <= 'z':
 			letter = true
 			out = append(out, r)
-		case r >= 'A' && r <= 'A':
+		case r >= 'A' && r <= 'Z':
 			letter = true
 			out = append(out, r)
 		case r >= '0' && r <= '9':
