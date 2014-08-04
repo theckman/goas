@@ -141,9 +141,10 @@ And now have fun. ;)
 - http://godoc.org/github.com/tideland/goas/v2/timex
 - http://godoc.org/github.com/tideland/goas/v1/version
 
-## Authors
+## Contributors
 
 - Frank Mueller - <mue@tideland.biz>
+- Benedikt Lang - <github@benediktlang.de>
 
 ## License
 

@@ -31,7 +31,7 @@ const (
 
 // PackageVersion returns the version of the version package.
 func PackageVersion() Version {
-	return New(1, 0, 0)
+	return New(1, 0, 1)
 }
 
 // Version defines the interface of a version.
