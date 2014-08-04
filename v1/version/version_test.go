@@ -83,6 +83,14 @@ func TestVersion(t *testing.T) {
 			patch:      3,
 			preRelease: "alpha",
 			metadata:   "007.a",
+		}, {
+			id:         "v1.2.3-ALPHA+007.a",
+			vsn:        version.New(1, 2, 3, "ALPHA", version.Metadata, "007", "a"),
+			major:      1,
+			minor:      2,
+			patch:      3,
+			preRelease: "ALPHA",
+			metadata:   "007.a",
 		},
 	}
 
