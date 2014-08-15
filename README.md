@@ -14,8 +14,7 @@ go get github.com/tideland/goas/v2/identifier
 go get github.com/tideland/goas/v2/logger
 go get github.com/tideland/goas/v2/loop
 go get github.com/tideland/goas/v2/monitoring
-go get github.com/tideland/goas/v1/scroller
-go get github.com/tideland/goas/v2/times
+go get github.com/tideland/goas/v2/timex
 go get github.com/tideland/goas/v1/version
 ```
 
@@ -31,6 +30,8 @@ The errors package allows to easily create formatted errors with `errors.New()` 
 `errors.Annotate()` like with the `fmt.Errorf()` function, but also with an error code. 
 This easily can be tested with `errors.IsError(err, code)`. 
 
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v3/errors?status.svg)](https://godoc.org/github.com/tideland/goas/v3/errors)
+
 ### Identifier
 
 The identifier packge provides different ways to produce identifiers like UUIDs. The
@@ -39,12 +40,16 @@ based on passed data or types. Here the individual parts are harmonized and conc
 by the passed seperators. It is the users responsibility to check if the identifier is
 unique in its context.
 
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v2/identifier?status.svg)](https://godoc.org/github.com/tideland/goas/v2/identifier)
+
 ### Logger
 
 This package helps to log with different levels and on different backends like on an
 io.Writer or the Go logging. Own backends can be defined based on a simple interface.
 Setting the level controls what will be logged. Debug and critical logging also print
 filename, function name and line number.
+
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v2/logger?status.svg)](https://godoc.org/github.com/tideland/goas/v2/logger)
 
 ### Loop
 
@@ -86,6 +91,8 @@ Another variant is `loop.GoRecoverable(f.backendLoop, f.recoverFunc)`. Here a lo
 or the value of a recovering after a panic are passed to the recover function. It then
 can decide if the loop shall be restarted or really terminated.
 
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v2/loop?status.svg)](https://godoc.org/github.com/tideland/goas/v2/loop)
+
 ### Monitoring
 
 The monitoring package supports three kinds of system monitoring. They are helpful to
@@ -104,16 +111,14 @@ monitoring.DecrVariable("bar")
 monitoring.Register("baz", func() (string, error) { ... })
 ```
 
-### Scroller
-
-A scroller allows a filtered streaming of lines from a `Reader` into a `Writer`. If the
-end of the data out of the reader is reached the scroller waits until new data is
-delivered.
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v2/monitoring?status.svg)](https://godoc.org/github.com/tideland/goas/v2/monitoring)
 
 ### Timex
 
 The timex package supports the work with dates and times. Additionally it provides a
 simple crontab.
+
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v2/timex?status.svg)](https://godoc.org/github.com/tideland/goas/v2/timex)
 
 ### Version
 
@@ -128,18 +133,9 @@ Here given a version number MAJOR.MINOR.PATCH, increment the:
 Additional labels for pre-release and build metadata are available as extensions to the 
 MAJOR.MINOR.PATCH format.
 
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v1/version?status.svg)](https://godoc.org/github.com/tideland/goas/v1/version)
+
 And now have fun. ;)
-
-## Documentation
-
-- http://godoc.org/github.com/tideland/goas/v3/errors
-- http://godoc.org/github.com/tideland/goas/v2/identifier
-- http://godoc.org/github.com/tideland/goas/v2/logger
-- http://godoc.org/github.com/tideland/goas/v2/loop
-- http://godoc.org/github.com/tideland/goas/v2/monitoring
-- http://godoc.org/github.com/tideland/goas/v1/scroller
-- http://godoc.org/github.com/tideland/goas/v2/timex
-- http://godoc.org/github.com/tideland/goas/v1/version
 
 ## Contributors
 

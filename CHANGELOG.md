@@ -1,5 +1,9 @@
 # Tideland Go Application Support
 
+## 2014-08-15
+
+- Migrated the scroller package from GOAS to GODM
+
 ## 2014-08-03
 
 - Added v1.0.0 of the version package
