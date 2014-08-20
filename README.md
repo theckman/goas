@@ -12,6 +12,7 @@ always need. See their descriptions below.
 go get github.com/tideland/goas/v3/errors
 go get github.com/tideland/goas/v2/identifier
 go get github.com/tideland/goas/v2/logger
+go get github.com/tideland/goas/v3/logger
 go get github.com/tideland/goas/v2/loop
 go get github.com/tideland/goas/v2/monitoring
 go get github.com/tideland/goas/v2/timex
@@ -44,12 +45,22 @@ unique in its context.
 
 ### Logger
 
+#### Version 2
+
 This package helps to log with different levels and on different backends like on an
 io.Writer or the Go logging. Own backends can be defined based on a simple interface.
-Setting the level controls what will be logged. Debug and critical logging also print
-filename, function name and line number.
+Setting the level controls what will be logged. `Debugf()` and `Criticalf()` logging also 
+print filename, function name and line number.
 
 [![GoDoc](https://godoc.org/github.com/tideland/goas/v2/logger?status.svg)](https://godoc.org/github.com/tideland/goas/v2/logger)
+
+#### Version 3
+
+Like version 2, but with new log level *Fatal*. After logging it directly ends the application
+with a return code of -1 or with a panic. Own functions for the termination after `Fatalf()`
+can be set too.
+
+[![GoDoc](https://godoc.org/github.com/tideland/goas/v3/logger?status.svg)](https://godoc.org/github.com/tideland/goas/v3/logger)
 
 ### Loop
 

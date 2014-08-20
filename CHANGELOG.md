@@ -1,5 +1,12 @@
 # Tideland Go Application Support
 
+## 2014-08-20
+
+- Added v3.0.0 of the logger package
+- Setter now return current values for possible resetting later
+- New log level Fatal directly ends the application with a
+  switchable function after logging
+
 ## 2014-08-15
 
 - Migrated the scroller package from GOAS to GODM
