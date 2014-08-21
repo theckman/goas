@@ -81,6 +81,9 @@ type Scene interface {
 
 	// Fetch retrieves a prop.
 	Fetch(key string) (interface{}, error)
+
+	// Dispose retrieves a prop and deletes it from the store.
+	Dispose(key string) (interface{}, error)
 }
 
 // scene implements Scene.
@@ -124,7 +127,7 @@ func (s *scene) Store(key string, prop interface{}) error {
 
 // StoreClean is specified on the Scene interface.
 func (s *scene) StoreClean(key string, prop interface{}, cleanup CleanupFunc) error {
-	cmd := &envelope{
+	command := &envelope{
 		kind: storeProp,
 		box: &box{
 			key:     key,
@@ -133,28 +136,67 @@ func (s *scene) StoreClean(key string, prop interface{}, cleanup CleanupFunc) er
 		},
 		respChan: make(chan *envelope, 1),
 	}
-	_, err := s.command(cmd)
+	_, err := s.command(command)
 	return err
 }
 
 // Fetch is specified on the Scene interface.
 func (s *scene) Fetch(key string) (interface{}, error) {
-	cmd := &envelope{
+	command := &envelope{
 		kind: fetchProp,
 		box: &box{
 			key: key,
 		},
 		respChan: make(chan *envelope, 1),
 	}
-	resp, err := s.command(cmd)
+	resp, err := s.command(command)
 	if err != nil {
 		return nil, err
 	}
 	return resp.box.prop, nil
 }
 
+// Dispose is specified on the Scene interface.
+func (s *scene) Dispose(key string) (interface{}, error) {
+	command := &envelope{
+		kind: disposeProp,
+		box: &box{
+			key: key,
+		},
+		respChan: make(chan *envelope, 1),
+	}
+	resp, err := s.command(command)
+	if err != nil {
+		return nil, err
+	}
+	return resp.box.prop, nil
+}
+
+// command sends a command envelope to the backend and
+// waits for the response.
+func (s *scene) command(command *envelope) (*envelope, error) {
+	select {
+	case s.commandChan <- command:
+	case <-s.backend.IsStopping():
+		return nil, errors.New(ErrSceneEnded, errorMessages)
+	}
+	select {
+	case <-s.backend.IsStopping():
+		return nil, s.Wait()
+	case resp := <-command.respChan:
+		if resp.err != nil {
+			return nil, resp.err
+		}
+		return resp, nil
+	}
+}
+
 // backendLoop runs the backend loop of the scene.
-func (s *scene) backendLoop(l loop.Loop) error {
+func (s *scene) backendLoop(l loop.Loop) (err error) {
+	// Defer cleanup.
+	defer func() {
+		err = s.cleanupAllProps()
+	}()
 	// Init timers.
 	var watchdog <-chan time.Time
 	var clapperboard <-chan time.Time
@@ -168,69 +210,69 @@ func (s *scene) backendLoop(l loop.Loop) error {
 		}
 		select {
 		case <-l.ShallStop():
-			return nil
-		case to := <-watchdog:
-			return errors.New(ErrTimeout, errorMessages, "inactivity", to)
-		case to := <-clapperboard:
-			return errors.New(ErrTimeout, errorMessages, "absolute", to)
-		case cmd := <-s.commandChan:
-			s.processCommand(cmd)
+			return
+		case timeout := <-watchdog:
+			return errors.New(ErrTimeout, errorMessages, "inactivity", timeout)
+		case timeout := <-clapperboard:
+			return errors.New(ErrTimeout, errorMessages, "absolute", timeout)
+		case command := <-s.commandChan:
+			s.processCommand(command)
 		}
-	}
-}
-
-// command sends a command envelope to the backend and
-// waits for the response.
-func (s *scene) command(cmd *envelope) (*envelope, error) {
-	select {
-	case s.commandChan <- cmd:
-	case <-s.backend.IsStopping():
-		return nil, errors.New(ErrSceneEnded, errorMessages)
-	}
-	select {
-	case <-s.backend.IsStopping():
-		return nil, s.Wait()
-	case resp := <-cmd.respChan:
-		if resp.err != nil {
-			return nil, resp.err
-		}
-		return resp, nil
 	}
 }
 
 // processCommand processes the sent commands.
-func (s *scene) processCommand(cmd *envelope) {
-	switch cmd.kind {
+func (s *scene) processCommand(command *envelope) {
+	switch command.kind {
 	case storeProp:
 		// Add a new prop.
-		_, ok := s.props[cmd.box.key]
+		_, ok := s.props[command.box.key]
 		if ok {
-			cmd.err = errors.New(ErrPropAlreadyExist, errorMessages, cmd.box.key)
+			command.err = errors.New(ErrPropAlreadyExist, errorMessages, command.box.key)
 		} else {
-			s.props[cmd.box.key] = cmd.box
+			s.props[command.box.key] = command.box
 		}
 	case fetchProp:
 		// Retrieve a prop.
-		box, ok := s.props[cmd.box.key]
+		box, ok := s.props[command.box.key]
 		if !ok {
-			cmd.err = errors.New(ErrPropNotFound, errorMessages, cmd.box.key)
+			command.err = errors.New(ErrPropNotFound, errorMessages, command.box.key)
 		} else {
-			cmd.box = box
+			command.box = box
 		}
 	case disposeProp:
 		// Remove a prop.
-		box, ok := s.props[cmd.box.key]
-		if ok {
-			delete(s.props, cmd.box.key)
+		box, ok := s.props[command.box.key]
+		if !ok {
+			command.err = errors.New(ErrPropNotFound, errorMessages, command.box.key)
+		} else {
+			delete(s.props, command.box.key)
+			command.box = box
 			if box.cleanup != nil {
-				cmd.err = box.cleanup(cmd.box.key, cmd.box.prop)
+				cerr := box.cleanup(box.key, box.prop)
+				if cerr != nil {
+					command.err = errors.Annotate(cerr, ErrCleanupFailed, errorMessages, box.key)
+				}
 			}
 		}
 	default:
 		panic("illegal command")
 	}
 	// Return the changed command as response.
-	cmd.respChan <- cmd
+	command.respChan <- command
+}
+
+// cleanupAllProps cleans all props.
+func (s *scene) cleanupAllProps() error {
+	for _, box := range s.props {
+		if box.cleanup != nil {
+			err := box.cleanup(box.key, box.prop)
+			if err != nil {
+				return errors.Annotate(err, ErrCleanupFailed, errorMessages, box.key)
+			}
+		}
+	}
+	return nil
 }
 
 // EOF

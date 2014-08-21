@@ -24,6 +24,7 @@ const (
 	ErrTimeout
 	ErrPropAlreadyExist
 	ErrPropNotFound
+	ErrCleanupFailed
 )
 
 var errorMessages = errors.Messages{
@@ -31,6 +32,7 @@ var errorMessages = errors.Messages{
 	ErrTimeout:          "scene %s timeout reached at %v",
 	ErrPropAlreadyExist: "prop %q already exist",
 	ErrPropNotFound:     "prop %q does not exist",
+	ErrCleanupFailed:    "cleanup of prop %q failed",
 }
 
 //--------------------
@@ -59,6 +61,12 @@ func IsPropAlreadyExistError(err error) bool {
 // non-existing prop.
 func IsPropNotFoundError(err error) bool {
 	return errors.IsError(err, ErrPropNotFound)
+}
+
+// IsCleanupFaildError returns true, if the error signals the
+// failing of a prop error.
+func IsCleanupFailedError(err error) bool {
+	return errors.IsError(err, ErrCleanupFailed)
 }
 
 // EOF
