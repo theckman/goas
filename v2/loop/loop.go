@@ -24,7 +24,7 @@ import (
 
 // PackageVersion returns the version of the version package.
 func PackageVersion() version.Version {
-	return version.New(2, 1, 0)
+	return version.New(2, 1, 1)
 }
 
 //--------------------
@@ -232,13 +232,13 @@ func (l *loop) Stop() error {
 func (l *loop) Kill(err error) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
+	if l.err == nil {
+		l.err = err
+	}
 	if l.status != Running {
 		return
 	}
 	l.status = Stopping
-	if l.err == nil {
-		l.err = err
-	}
 	select {
 	case <-l.stopChan:
 	default:
