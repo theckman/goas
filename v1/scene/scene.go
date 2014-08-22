@@ -25,7 +25,7 @@ import (
 
 // PackageVersion returns the version of the version package.
 func PackageVersion() version.Version {
-	return version.New(1, 0, 0, "alpha")
+	return version.New(1, 0, 0)
 }
 
 //--------------------
@@ -90,15 +90,23 @@ type Scene interface {
 type scene struct {
 	props       map[string]*box
 	inactivity  time.Duration
-	timeout     time.Duration
+	absolute    time.Duration
 	commandChan chan *envelope
 	backend     loop.Loop
 }
 
-// StartScene creates and runs a new scene.
-func StartScene() Scene {
+// Start creates and runs a new scene.
+func Start() Scene {
+	return StartLimited(0, 0)
+}
+
+// StartLimited creates and runs a new scene with an inactivity
+// and an absolute timeout. They may be zero.
+func StartLimited(inactivity, absolute time.Duration) Scene {
 	s := &scene{
 		props:       make(map[string]*box),
+		inactivity:  inactivity,
+		absolute:    absolute,
 		commandChan: make(chan *envelope, 1),
 	}
 	s.backend = loop.Go(s.backendLoop)
@@ -178,11 +186,19 @@ func (s *scene) command(command *envelope) (*envelope, error) {
 	select {
 	case s.commandChan <- command:
 	case <-s.backend.IsStopping():
-		return nil, errors.New(ErrSceneEnded, errorMessages)
+		err := s.Wait()
+		if err == nil {
+			err = errors.New(ErrSceneEnded, errorMessages)
+		}
+		return nil, err
 	}
 	select {
 	case <-s.backend.IsStopping():
-		return nil, s.Wait()
+		err := s.Wait()
+		if err == nil {
+			err = errors.New(ErrSceneEnded, errorMessages)
+		}
+		return nil, err
 	case resp := <-command.respChan:
 		if resp.err != nil {
 			return nil, resp.err
@@ -195,22 +211,25 @@ func (s *scene) command(command *envelope) (*envelope, error) {
 func (s *scene) backendLoop(l loop.Loop) (err error) {
 	// Defer cleanup.
 	defer func() {
-		err = s.cleanupAllProps()
+		cerr := s.cleanupAllProps()
+		if err == nil {
+			err = cerr
+		}
 	}()
 	// Init timers.
 	var watchdog <-chan time.Time
 	var clapperboard <-chan time.Time
-	if s.timeout != 0 {
-		clapperboard = time.After(s.timeout)
+	if s.absolute > 0 {
+		clapperboard = time.After(s.absolute)
 	}
 	// Run loop.
 	for {
-		if s.inactivity != 0 {
+		if s.inactivity > 0 {
 			watchdog = time.After(s.inactivity)
 		}
 		select {
 		case <-l.ShallStop():
-			return
+			return nil
 		case timeout := <-watchdog:
 			return errors.New(ErrTimeout, errorMessages, "inactivity", timeout)
 		case timeout := <-clapperboard:

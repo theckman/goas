@@ -14,6 +14,7 @@ package scene_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/tideland/goas/v1/scene"
 	"github.com/tideland/gots/v3/asserts"
@@ -27,7 +28,7 @@ import (
 // any timeout.
 func TestSimpleNoTimeout(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
-	scn := scene.StartScene()
+	scn := scene.Start()
 
 	err := scn.Store("foo", 4711)
 	assert.Nil(err)
@@ -50,6 +51,26 @@ func TestSimpleNoTimeout(t *testing.T) {
 	assert.Nil(err)
 }
 
+// TestAccessAfterStopping tests an access after the
+// scene already has been stopped.
+func TestAccessAfterStopping(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	scn := scene.Start()
+
+	err := scn.Store("foo", 4711)
+	assert.Nil(err)
+	foo, err := scn.Fetch("foo")
+	assert.Nil(err)
+	assert.Equal(foo, 4711)
+
+	err = scn.Stop()
+	assert.Nil(err)
+
+	foo, err = scn.Fetch("foo")
+	assert.True(scene.IsSceneEndedError(err))
+	assert.Nil(foo)
+}
+
 // TestCleanupNoError tests the cleanup of props with
 // no errors.
 func TestCleanupNoError(t *testing.T) {
@@ -59,7 +80,7 @@ func TestCleanupNoError(t *testing.T) {
 		cleanups[key] = prop
 		return nil
 	}
-	scn := scene.StartScene()
+	scn := scene.Start()
 
 	err := scn.StoreClean("foo", 4711, cleanup)
 	assert.Nil(err)
@@ -84,7 +105,7 @@ func TestCleanupWithErrors(t *testing.T) {
 	cleanup := func(key string, prop interface{}) error {
 		return errors.New("ouch")
 	}
-	scn := scene.StartScene()
+	scn := scene.Start()
 
 	err := scn.StoreClean("foo", 4711, cleanup)
 	assert.Nil(err)
@@ -96,13 +117,108 @@ func TestCleanupWithErrors(t *testing.T) {
 	foo, err := scn.Dispose("foo")
 	assert.True(scene.IsCleanupFailedError(err))
 	assert.Nil(foo)
-	bar, err := scn.Dispose("bar")
-	assert.True(scene.IsCleanupFailedError(err))
-	assert.Nil(bar)
+	bar, err := scn.Fetch("bar")
+	assert.Nil(err)
+	assert.Equal(bar, true)
 
 	err = scn.Stop()
-	assert.NotNil(err)
 	assert.True(scene.IsCleanupFailedError(err))
+}
+
+// TestSimpleInactivityTimeout tests a simple scene usage
+// with inactivity timeout.
+func TestSimpleInactivityTimeout(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	scn := scene.StartLimited(100*time.Millisecond, 0)
+
+	err := scn.Store("foo", 4711)
+	assert.Nil(err)
+
+	for i := 0; i < 5; i++ {
+		foo, err := scn.Fetch("foo")
+		assert.Nil(err)
+		assert.Equal(foo, 4711)
+		time.Sleep(50)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	foo, err := scn.Fetch("foo")
+	assert.True(scene.IsTimeoutError(err))
+	assert.Nil(foo)
+
+	err = scn.Stop()
+	assert.True(scene.IsTimeoutError(err))
+}
+
+// TestSimpleAbsoluteTimeout tests a simple scene usage
+// with absolute timeout.
+func TestSimpleAbsoluteTimeout(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	scn := scene.StartLimited(0, 250*time.Millisecond)
+
+	err := scn.Store("foo", 4711)
+	assert.Nil(err)
+
+	for {
+		_, err = scn.Fetch("foo")
+		if err != nil {
+			assert.True(scene.IsTimeoutError(err))
+			break
+		}
+		time.Sleep(50)
+	}
+
+	err = scn.Stop()
+	assert.True(scene.IsTimeoutError(err))
+}
+
+// TestCleanupAfterTimeout tests the cleanup of props after
+// a timeout.
+func TestCleanupAfterTimeout(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	cleanups := make(map[string]interface{})
+	cleanup := func(key string, prop interface{}) error {
+		cleanups[key] = prop
+		return nil
+	}
+	scn := scene.StartLimited(0, 100*time.Millisecond)
+
+	err := scn.StoreClean("foo", 4711, cleanup)
+	assert.Nil(err)
+	err = scn.StoreClean("bar", "yadda", cleanup)
+	assert.Nil(err)
+
+	time.Sleep(250 * time.Millisecond)
+
+	err = scn.Stop()
+	assert.True(scene.IsTimeoutError(err))
+
+	assert.Length(cleanups, 2)
+	assert.Equal(cleanups["foo"], 4711)
+	assert.Equal(cleanups["bar"], "yadda")
+}
+
+// TestAbort tests the aborting of a scene. A cleanup error
+// will not be reported.
+func TestAbort(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	cleanup := func(key string, prop interface{}) error {
+		return errors.New("ouch")
+	}
+	scn := scene.Start()
+
+	err := scn.StoreClean("foo", 4711, cleanup)
+	assert.Nil(err)
+
+	scn.Abort(errors.New("aborted"))
+
+	foo, err := scn.Fetch("foo")
+	assert.ErrorMatch(err, "aborted")
+	assert.Nil(foo)
+
+	err = scn.Stop()
+	assert.ErrorMatch(err, "aborted")
 }
 
 // EOF

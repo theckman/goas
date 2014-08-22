@@ -41,7 +41,7 @@ var errorMessages = errors.Messages{
 
 // IsSceneEndedError returns true, if the error signals that
 // the scene isn't active anymore.
-func IsSceneEdedError(err error) bool {
+func IsSceneEndedError(err error) bool {
 	return errors.IsError(err, ErrSceneEnded)
 }
 

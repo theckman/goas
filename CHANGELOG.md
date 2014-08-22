@@ -4,6 +4,9 @@
 
 - loop package has now v2.1.1
 - fixed bug with dropped loop errors after calling Stop()
+- added scene package v1.0.0
+- allows sharing of data between different actors in
+  larger scenarios
 
 ## 2014-08-20
 
