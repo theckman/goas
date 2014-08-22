@@ -1,5 +1,10 @@
 # Tideland Go Application Support
 
+## 2014-08-22
+
+- loop package has now v2.1.1
+- fixed bug with dropped loop errors after calling Stop()
+
 ## 2014-08-20
 
 - Added v3.0.0 of the logger package
