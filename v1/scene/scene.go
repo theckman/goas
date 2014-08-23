@@ -87,10 +87,10 @@ type Scene interface {
 	// Signal allows to signal a topic to interested listeners.
 	Signal(topic string) error
 
-	// WaitSignal waits until the passed topic has been signalled.
+	// WaitSignal waits until the passed topic has been signaled.
 	WaitSignal(topic string) error
 
-	// WaitSignalLimited waits until the passed topic has been signalled
+	// WaitSignalLimited waits until the passed topic has been signaled
 	// or the timeout happened.
 	WaitSignalLimited(topic string, timeout time.Duration) error
 }

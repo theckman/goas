@@ -279,7 +279,7 @@ func TestNoSignalDueToStop(t *testing.T) {
 	assert.Nil(err)
 }
 
-// TestSignalWithoutSubscriber tests the signalling with no subscriber
+// TestSignalWithoutSubscriber tests the signaling with no subscriber
 func TestSignalWithoutSubscriber(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()

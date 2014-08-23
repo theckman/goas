@@ -171,9 +171,9 @@ The cleanup is called individually per prop when disposing it, when the
 scene ends due to a timeout, or when it is stopped with `err := scn.Stop()`
 or `scn.Abort(myError)`.
 
-Another functionality of the scene is the signalling of a topic. So
+Another functionality of the scene is the signaling of a topic. So
 multiple goroutines can wait for a signal with a topic, all will be
-notified after the topic has been signalled. Additionally they can wait
+notified after the topic has been signaled. Additionally they can wait
 with a timeout.
 
 ```
