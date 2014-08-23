@@ -171,6 +171,23 @@ The cleanup is called individually per prop when disposing it, when the
 scene ends due to a timeout, or when it is stopped with `err := scn.Stop()`
 or `scn.Abort(myError)`.
 
+Another functionality of the scene is the signalling of a topic. So
+multiple goroutines can wait for a signal with a topic, all will be
+notified after the topic has been signalled. Additionally they can wait
+with a timeout.
+
+```
+go func() {
+        err := scn.WaitSignal("foo")
+        ...
+}()
+go func() {
+        err := scn.WaitSignal("foo", 5 * time.Second)
+        ...
+}()
+err := scn.Signal("foo")
+```
+
 A scene knows two different timeouts. The first is the time of inactivity,
 the second is the absolute maximum time of a scene.
 

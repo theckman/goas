@@ -1,5 +1,10 @@
 # Tideland Go Application Support
 
+## 2014-08-23
+
+- scene package has no v1.1.0
+- added signalling functionality
+
 ## 2014-08-22
 
 - loop package has now v2.1.1

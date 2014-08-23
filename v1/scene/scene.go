@@ -14,19 +14,9 @@ package scene
 import (
 	"time"
 
-	"github.com/tideland/goas/v1/version"
 	"github.com/tideland/goas/v2/loop"
 	"github.com/tideland/goas/v3/errors"
 )
-
-//--------------------
-// VERSION
-//--------------------
-
-// PackageVersion returns the version of the version package.
-func PackageVersion() version.Version {
-	return version.New(1, 0, 0)
-}
 
 //--------------------
 // SCENE
@@ -43,18 +33,27 @@ type box struct {
 	cleanup CleanupFunc
 }
 
+// subscription contains a topic and a signal channel.
+type subscription struct {
+	topic      string
+	signalChan chan struct{}
+}
+
 const (
 	storeProp = iota
 	fetchProp
 	disposeProp
+	signal
+	subscribe
 )
 
 // envelope contains information transfered between client and scene.
 type envelope struct {
-	kind     int
-	box      *box
-	err      error
-	respChan chan *envelope
+	kind         int
+	box          *box
+	subscription *subscription
+	err          error
+	respChan     chan *envelope
 }
 
 // Scene is the access point to one scene. It has to be created once
@@ -84,15 +83,26 @@ type Scene interface {
 
 	// Dispose retrieves a prop and deletes it from the store.
 	Dispose(key string) (interface{}, error)
+
+	// Signal allows to signal a topic to interested listeners.
+	Signal(topic string) error
+
+	// WaitSignal waits until the passed topic has been signalled.
+	WaitSignal(topic string) error
+
+	// WaitSignalLimited waits until the passed topic has been signalled
+	// or the timeout happened.
+	WaitSignalLimited(topic string, timeout time.Duration) error
 }
 
 // scene implements Scene.
 type scene struct {
-	props       map[string]*box
-	inactivity  time.Duration
-	absolute    time.Duration
-	commandChan chan *envelope
-	backend     loop.Loop
+	props         map[string]*box
+	subscriptions map[string][]chan struct{}
+	inactivity    time.Duration
+	absolute      time.Duration
+	commandChan   chan *envelope
+	backend       loop.Loop
 }
 
 // Start creates and runs a new scene.
@@ -104,10 +114,11 @@ func Start() Scene {
 // and an absolute timeout. They may be zero.
 func StartLimited(inactivity, absolute time.Duration) Scene {
 	s := &scene{
-		props:       make(map[string]*box),
-		inactivity:  inactivity,
-		absolute:    absolute,
-		commandChan: make(chan *envelope, 1),
+		props:         make(map[string]*box),
+		subscriptions: make(map[string][]chan struct{}),
+		inactivity:    inactivity,
+		absolute:      absolute,
+		commandChan:   make(chan *envelope, 1),
 	}
 	s.backend = loop.Go(s.backendLoop)
 	return s
@@ -178,6 +189,58 @@ func (s *scene) Dispose(key string) (interface{}, error) {
 		return nil, err
 	}
 	return resp.box.prop, nil
+}
+
+// Signal is specified on the Scene interface.
+func (s *scene) Signal(topic string) error {
+	command := &envelope{
+		kind: signal,
+		subscription: &subscription{
+			topic: topic,
+		},
+		respChan: make(chan *envelope, 1),
+	}
+	_, err := s.command(command)
+	return err
+}
+
+// WaitSignal is specified on the Scene interface.
+func (s *scene) WaitSignal(topic string) error {
+	return s.WaitSignalLimited(topic, 0)
+}
+
+// WaitSignalLimited is specified on the Scene interface.
+func (s *scene) WaitSignalLimited(topic string, timeout time.Duration) error {
+	// Add signal channel.
+	command := &envelope{
+		kind: subscribe,
+		subscription: &subscription{
+			topic:      topic,
+			signalChan: make(chan struct{}, 1),
+		},
+		respChan: make(chan *envelope, 1),
+	}
+	_, err := s.command(command)
+	if err != nil {
+		return err
+	}
+	// Wait for signal.
+	var timeoutChan <-chan time.Time
+	if timeout > 0 {
+		timeoutChan = time.After(timeout)
+	}
+	select {
+	case <-s.backend.IsStopping():
+		err = s.Wait()
+		if err == nil {
+			err = errors.New(ErrSceneEnded, errorMessages)
+		}
+		return err
+	case <-command.subscription.signalChan:
+		return nil
+	case <-timeoutChan:
+		return errors.New(ErrWaitedTooLong, errorMessages, topic)
+	}
 }
 
 // command sends a command envelope to the backend and
@@ -273,6 +336,25 @@ func (s *scene) processCommand(command *envelope) {
 					command.err = errors.Annotate(cerr, ErrCleanupFailed, errorMessages, box.key)
 				}
 			}
+		}
+	case signal:
+		// Signal a topic.
+		subscribers, ok := s.subscriptions[command.subscription.topic]
+		if !ok {
+			command.err = errors.New(ErrNoSubscriber, errorMessages, command.subscription.topic)
+		} else {
+			delete(s.subscriptions, command.subscription.topic)
+			for _, subscriber := range subscribers {
+				subscriber <- struct{}{}
+			}
+		}
+	case subscribe:
+		// Add a subscriber channel.
+		subscribers, ok := s.subscriptions[command.subscription.topic]
+		if !ok {
+			s.subscriptions[command.subscription.topic] = []chan struct{}{command.subscription.signalChan}
+		} else {
+			s.subscriptions[command.subscription.topic] = append(subscribers, command.subscription.signalChan)
 		}
 	default:
 		panic("illegal command")

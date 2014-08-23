@@ -48,6 +48,21 @@
 //
 //    scn.Abort(myError)
 //
+// Another functionality of the scene is the signalling of a topic. So
+// multiple goroutines can wait for a signal with a topic, all will be
+// notified after the topic has been signalled. Additionally they can wait
+// with a timeout.
+//
+//    go func() {
+//        err := scn.WaitSignal("foo")
+//        ...
+//    }()
+//    go func() {
+//        err := scn.WaitSignal("foo", 5 * time.Second)
+//        ...
+//    }()
+//    err := scn.Signal("foo")
+//
 // A scene knows two different timeouts. The first is the time of inactivity,
 // the second is the absolute maximum time of a scene.
 //
@@ -59,5 +74,22 @@
 // latest 60 minutes after the start. Both value may be zero if not needed.
 // So scene.StartLimited(0, 0) is the same as scene.Start().
 package scene
+
+//--------------------
+// IMPORTS
+//--------------------
+
+import (
+	"github.com/tideland/goas/v1/version"
+)
+
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(1, 1, 0)
+}
 
 // EOF
