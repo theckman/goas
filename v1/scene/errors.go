@@ -25,7 +25,6 @@ const (
 	ErrPropAlreadyExist
 	ErrPropNotFound
 	ErrCleanupFailed
-	ErrNoSubscriber
 	ErrWaitedTooLong
 )
 
@@ -35,7 +34,6 @@ var errorMessages = errors.Messages{
 	ErrPropAlreadyExist: "prop %q already exist",
 	ErrPropNotFound:     "prop %q does not exist",
 	ErrCleanupFailed:    "cleanup of prop %q failed",
-	ErrNoSubscriber:     "no subscriber to signal %q",
 	ErrWaitedTooLong:    "waiting for signal %q timed out",
 }
 
@@ -71,12 +69,6 @@ func IsPropNotFoundError(err error) bool {
 // failing of a prop error.
 func IsCleanupFailedError(err error) bool {
 	return errors.IsError(err, ErrCleanupFailed)
-}
-
-// IsNoSubscriberEroor returns true, if the error signals that
-// nobody waits for the passed signal.
-func IsNoSubscriberError(err error) bool {
-	return errors.IsError(err, ErrNoSubscriber)
 }
 
 // IsWaitedTooLongError returns true, if the error signals a

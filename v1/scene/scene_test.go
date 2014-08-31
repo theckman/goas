@@ -221,20 +221,20 @@ func TestAbort(t *testing.T) {
 	assert.ErrorMatch(err, "aborted")
 }
 
-// TestSignalNoTimeout tests the waiting for a signal without
+// TestFlagNoTimeout tests the waiting for a signal without
 // a timeout.
-func TestSignalNoTimeout(t *testing.T) {
+func TestFlagNoTimeout(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()
 
 	go func() {
-		err := scn.WaitSignal("foo")
+		err := scn.WaitFlag("foo")
 		assert.Nil(err)
 		err = scn.Store("foo-a", true)
 		assert.Nil(err)
 	}()
 	go func() {
-		err := scn.WaitSignal("foo")
+		err := scn.WaitFlag("foo")
 		assert.Nil(err)
 		err = scn.Store("foo-b", true)
 		assert.Nil(err)
@@ -242,7 +242,7 @@ func TestSignalNoTimeout(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	err := scn.Signal("foo")
+	err := scn.Flag("foo")
 	assert.Nil(err)
 
 	time.Sleep(250 * time.Millisecond)
@@ -258,18 +258,18 @@ func TestSignalNoTimeout(t *testing.T) {
 	assert.Nil(err)
 }
 
-// TestNoSignalDueToStop tests the waiting for a signal while
+// TestNoFlagDueToStop tests the waiting for a signal while
 // a scene is stopped.
-func TestNoSignalDueToStop(t *testing.T) {
+func TestNoFlagDueToStop(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()
 
 	go func() {
-		err := scn.WaitSignal("foo")
+		err := scn.WaitFlag("foo")
 		assert.True(scene.IsSceneEndedError(err))
 	}()
 	go func() {
-		err := scn.WaitSignal("foo")
+		err := scn.WaitFlag("foo")
 		assert.True(scene.IsSceneEndedError(err))
 	}()
 
@@ -279,59 +279,75 @@ func TestNoSignalDueToStop(t *testing.T) {
 	assert.Nil(err)
 }
 
-// TestSignalWithoutSubscriber tests the signaling with no subscriber
-func TestSignalWithoutSubscriber(t *testing.T) {
+// TestStoreAndFlag tests the signaling after storing
+// after value.
+func TestStoreAndFlag(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()
 
-	err := scn.Signal("foo")
-	assert.True(scene.IsNoSubscriberError(err))
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		err := scn.StoreAndFlag("foo", 4711)
+		assert.Nil(err)
+	}()
+
+	err := scn.WaitFlag("foo")
+	assert.Nil(err)
+	foo, err := scn.Fetch("foo")
+	assert.Nil(err)
+	assert.Equal(foo, 4711)
 
 	err = scn.Stop()
 	assert.Nil(err)
 }
 
-// TestSubscriberRemoved tests that the subscribers are removed
-// after a signal.
-func TestSubscriberRemoved(t *testing.T) {
+// TestEarlyFlag tests the signaling before a waiting.
+func TestEarlyFlag(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()
-
-	go func() {
-		err := scn.WaitSignal("foo")
-		assert.Nil(err)
-	}()
-	go func() {
-		err := scn.WaitSignal("foo")
-		assert.Nil(err)
-	}()
-
-	time.Sleep(100 * time.Millisecond)
-
-	err := scn.Signal("foo")
+	err := scn.Flag("foo")
 	assert.Nil(err)
 
-	err = scn.Signal("foo")
-	assert.True(scene.IsNoSubscriberError(err))
-
-	err = scn.Stop()
-	assert.Nil(err)
-}
-
-// TestSignalTimeout tests the waiting for a signal with
-// a timeout.
-func TestSignalTimeout(t *testing.T) {
-	assert := asserts.NewTestingAssertion(t, false)
-	scn := scene.Start()
-
 	go func() {
-		err := scn.WaitSignal("foo")
+		err := scn.WaitFlag("foo")
 		assert.Nil(err)
 		err = scn.Store("foo-a", true)
 		assert.Nil(err)
 	}()
 	go func() {
-		err := scn.WaitSignalLimited("foo", 50*time.Millisecond)
+		err := scn.WaitFlag("foo")
+		assert.Nil(err)
+		err = scn.Store("foo-b", true)
+		assert.Nil(err)
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	fooA, err := scn.Fetch("foo-a")
+	assert.Nil(err)
+	assert.Equal(fooA, true)
+	fooB, err := scn.Fetch("foo-b")
+	assert.Nil(err)
+	assert.Equal(fooB, true)
+
+	err = scn.Stop()
+	assert.Nil(err)
+}
+
+// TestFlagTimeout tests the waiting for a signal with
+// a timeout.
+func TestFlagTimeout(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	scn := scene.Start()
+
+	go func() {
+		err := scn.WaitFlag("foo")
+		assert.Nil(err)
+		err = scn.Store("foo-a", true)
+		assert.Nil(err)
+	}()
+	go func() {
+		err := scn.WaitFlagLimited("foo", 50*time.Millisecond)
 		assert.True(scene.IsWaitedTooLongError(err))
 		err = scn.Store("foo-b", true)
 		assert.Nil(err)
@@ -339,7 +355,7 @@ func TestSignalTimeout(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	err := scn.Signal("foo")
+	err := scn.Flag("foo")
 	assert.Nil(err)
 
 	fooA, err := scn.Fetch("foo-a")
@@ -349,8 +365,21 @@ func TestSignalTimeout(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal(fooB, true)
 
-	err = scn.Signal("foo")
-	assert.True(scene.IsNoSubscriberError(err))
+	err = scn.Stop()
+	assert.Nil(err)
+}
+
+// TestFlagUnflag tests the removal of a flag.
+func TestFlagUnflag(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, false)
+	scn := scene.Start()
+
+	err := scn.Flag("foo")
+	assert.Nil(err)
+	err = scn.Unflag("foo")
+	assert.Nil(err)
+	err = scn.WaitFlagLimited("foo", 50*time.Millisecond)
+	assert.True(scene.IsWaitedTooLongError(err))
 
 	err = scn.Stop()
 	assert.Nil(err)

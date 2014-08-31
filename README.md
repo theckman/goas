@@ -177,15 +177,20 @@ with a timeout.
 
 ```
 go func() {
-        err := scn.WaitSignal("foo")
+        err := scn.WaitFlag("foo")
         ...
 }()
 go func() {
-        err := scn.WaitSignal("foo", 5 * time.Second)
+        err := scn.WaitFlagLimited("foo", 5 * time.Second)
         ...
 }()
-err := scn.Signal("foo")
+err := scn.Flag("foo")
 ```
+
+In case a flag is already signaled wait immediatily returns. `Store()`
+and `Flag()` can also be combined to `StoreAndFlag()`. This way the key
+will be used as flag topic and a waiter knows that the information is
+available.
 
 A scene knows two different timeouts. The first is the time of inactivity,
 the second is the absolute maximum time of a scene.

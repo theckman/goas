@@ -33,8 +33,8 @@ type box struct {
 	cleanup CleanupFunc
 }
 
-// subscription contains a topic and a signal channel.
-type subscription struct {
+// signaling contains a topic and a signal channel.
+type signaling struct {
 	topic      string
 	signalChan chan struct{}
 }
@@ -43,17 +43,18 @@ const (
 	storeProp = iota
 	fetchProp
 	disposeProp
-	signal
-	subscribe
+	flag
+	unflag
+	wait
 )
 
 // envelope contains information transfered between client and scene.
 type envelope struct {
-	kind         int
-	box          *box
-	subscription *subscription
-	err          error
-	respChan     chan *envelope
+	kind      int
+	box       *box
+	signaling *signaling
+	err       error
+	respChan  chan *envelope
 }
 
 // Scene is the access point to one scene. It has to be created once
@@ -74,9 +75,18 @@ type Scene interface {
 	// Store stores a prop with a given key. The key must not exist.
 	Store(key string, prop interface{}) error
 
+	// StoreAndFlag stores a prop with a given key. The key must not exist.
+	// The storing is signaled with the key as topic.
+	StoreAndFlag(key string, prop interface{}) error
+
 	// StoreClean stores a prop with a given key and a cleanup
 	// function called when a scene ends. The key must not exist.
 	StoreClean(key string, prop interface{}, cleanup CleanupFunc) error
+
+	// StoreClean stores a prop with a given key and a cleanup
+	// function called when a scene ends. The key must not exist.
+	// The storing is signaled with the key as topic.
+	StoreCleanAndFlag(key string, prop interface{}, cleanup CleanupFunc) error
 
 	// Fetch retrieves a prop.
 	Fetch(key string) (interface{}, error)
@@ -84,25 +94,37 @@ type Scene interface {
 	// Dispose retrieves a prop and deletes it from the store.
 	Dispose(key string) (interface{}, error)
 
-	// Signal allows to signal a topic to interested listeners.
-	Signal(topic string) error
+	// Flag allows to signal a topic to interested actors.
+	Flag(topic string) error
 
-	// WaitSignal waits until the passed topic has been signaled.
-	WaitSignal(topic string) error
+	// Unflag drops the signal for a given topic.
+	Unflag(topic string) error
 
-	// WaitSignalLimited waits until the passed topic has been signaled
+	// WaitFlag waits until the passed topic has been signaled.
+	WaitFlag(topic string) error
+
+	// WaitFlagAndFetch waits until the passed topic has been signaled.
+	// A prop stored at the topic as key is fetched.
+	WaitFlagAndFetch(topic string) (interface{}, error)
+
+	// WaitFlagLimited waits until the passed topic has been signaled
 	// or the timeout happened.
-	WaitSignalLimited(topic string, timeout time.Duration) error
+	WaitFlagLimited(topic string, timeout time.Duration) error
+
+	// WaitFlagLimitedAndFetch waits until the passed topic has been signaled
+	// or the timeout happened. A prop stored at the topic as key is fetched.
+	WaitFlagLimitedAndFetch(topic string, timeout time.Duration) (interface{}, error)
 }
 
 // scene implements Scene.
 type scene struct {
-	props         map[string]*box
-	subscriptions map[string][]chan struct{}
-	inactivity    time.Duration
-	absolute      time.Duration
-	commandChan   chan *envelope
-	backend       loop.Loop
+	props       map[string]*box
+	flags       map[string]bool
+	signalings  map[string][]chan struct{}
+	inactivity  time.Duration
+	absolute    time.Duration
+	commandChan chan *envelope
+	backend     loop.Loop
 }
 
 // Start creates and runs a new scene.
@@ -114,11 +136,12 @@ func Start() Scene {
 // and an absolute timeout. They may be zero.
 func StartLimited(inactivity, absolute time.Duration) Scene {
 	s := &scene{
-		props:         make(map[string]*box),
-		subscriptions: make(map[string][]chan struct{}),
-		inactivity:    inactivity,
-		absolute:      absolute,
-		commandChan:   make(chan *envelope, 1),
+		props:       make(map[string]*box),
+		flags:       make(map[string]bool),
+		signalings:  make(map[string][]chan struct{}),
+		inactivity:  inactivity,
+		absolute:    absolute,
+		commandChan: make(chan *envelope, 1),
 	}
 	s.backend = loop.Go(s.backendLoop)
 	return s
@@ -144,6 +167,15 @@ func (s *scene) Store(key string, prop interface{}) error {
 	return s.StoreClean(key, prop, nil)
 }
 
+// StoreAndFlag is specified on the Scene interface.
+func (s *scene) StoreAndFlag(key string, prop interface{}) error {
+	err := s.StoreClean(key, prop, nil)
+	if err != nil {
+		return err
+	}
+	return s.Flag(key)
+}
+
 // StoreClean is specified on the Scene interface.
 func (s *scene) StoreClean(key string, prop interface{}, cleanup CleanupFunc) error {
 	command := &envelope{
@@ -157,6 +189,15 @@ func (s *scene) StoreClean(key string, prop interface{}, cleanup CleanupFunc) er
 	}
 	_, err := s.command(command)
 	return err
+}
+
+// StoreCleanAndFlag is specified on the Scene interface.
+func (s *scene) StoreCleanAndFlag(key string, prop interface{}, cleanup CleanupFunc) error {
+	err := s.StoreClean(key, prop, cleanup)
+	if err != nil {
+		return err
+	}
+	return s.Flag(key)
 }
 
 // Fetch is specified on the Scene interface.
@@ -191,11 +232,11 @@ func (s *scene) Dispose(key string) (interface{}, error) {
 	return resp.box.prop, nil
 }
 
-// Signal is specified on the Scene interface.
-func (s *scene) Signal(topic string) error {
+// Flag is specified on the Scene interface.
+func (s *scene) Flag(topic string) error {
 	command := &envelope{
-		kind: signal,
-		subscription: &subscription{
+		kind: flag,
+		signaling: &signaling{
 			topic: topic,
 		},
 		respChan: make(chan *envelope, 1),
@@ -204,17 +245,39 @@ func (s *scene) Signal(topic string) error {
 	return err
 }
 
-// WaitSignal is specified on the Scene interface.
-func (s *scene) WaitSignal(topic string) error {
-	return s.WaitSignalLimited(topic, 0)
+// Unflag is specified on the Scene interface.
+func (s *scene) Unflag(topic string) error {
+	command := &envelope{
+		kind: unflag,
+		signaling: &signaling{
+			topic: topic,
+		},
+		respChan: make(chan *envelope, 1),
+	}
+	_, err := s.command(command)
+	return err
 }
 
-// WaitSignalLimited is specified on the Scene interface.
-func (s *scene) WaitSignalLimited(topic string, timeout time.Duration) error {
+// WaitFlag is specified on the Scene interface.
+func (s *scene) WaitFlag(topic string) error {
+	return s.WaitFlagLimited(topic, 0)
+}
+
+// WaitFlagAndFetch is specified on the Scene interface.
+func (s *scene) WaitFlagAndFetch(topic string) (interface{}, error) {
+	err := s.WaitFlag(topic)
+	if err != nil {
+		return nil, err
+	}
+	return s.Fetch(topic)
+}
+
+// WaitFlagLimited is specified on the Scene interface.
+func (s *scene) WaitFlagLimited(topic string, timeout time.Duration) error {
 	// Add signal channel.
 	command := &envelope{
-		kind: subscribe,
-		subscription: &subscription{
+		kind: wait,
+		signaling: &signaling{
 			topic:      topic,
 			signalChan: make(chan struct{}, 1),
 		},
@@ -236,11 +299,20 @@ func (s *scene) WaitSignalLimited(topic string, timeout time.Duration) error {
 			err = errors.New(ErrSceneEnded, errorMessages)
 		}
 		return err
-	case <-command.subscription.signalChan:
+	case <-command.signaling.signalChan:
 		return nil
 	case <-timeoutChan:
 		return errors.New(ErrWaitedTooLong, errorMessages, topic)
 	}
+}
+
+// WaitFlagLimitedAndFetch is specified on the Scene interface.
+func (s *scene) WaitFlagLimitedAndFetch(topic string, timeout time.Duration) (interface{}, error) {
+	err := s.WaitFlagLimited(topic, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return s.Fetch(topic)
 }
 
 // command sends a command envelope to the backend and
@@ -337,24 +409,28 @@ func (s *scene) processCommand(command *envelope) {
 				}
 			}
 		}
-	case signal:
+	case flag:
 		// Signal a topic.
-		subscribers, ok := s.subscriptions[command.subscription.topic]
-		if !ok {
-			command.err = errors.New(ErrNoSubscriber, errorMessages, command.subscription.topic)
-		} else {
-			delete(s.subscriptions, command.subscription.topic)
+		s.flags[command.signaling.topic] = true
+		// Notify subscribers.
+		subscribers, ok := s.signalings[command.signaling.topic]
+		if ok {
+			delete(s.signalings, command.signaling.topic)
 			for _, subscriber := range subscribers {
 				subscriber <- struct{}{}
 			}
 		}
-	case subscribe:
-		// Add a subscriber channel.
-		subscribers, ok := s.subscriptions[command.subscription.topic]
-		if !ok {
-			s.subscriptions[command.subscription.topic] = []chan struct{}{command.subscription.signalChan}
+	case unflag:
+		// Drop a topic.
+		delete(s.flags, command.signaling.topic)
+	case wait:
+		// Add a waiter for a topic.
+		active := s.flags[command.signaling.topic]
+		if active {
+			command.signaling.signalChan <- struct{}{}
 		} else {
-			s.subscriptions[command.subscription.topic] = append(subscribers, command.subscription.signalChan)
+			waiters := s.signalings[command.signaling.topic]
+			s.signalings[command.signaling.topic] = append(waiters, command.signaling.signalChan)
 		}
 	default:
 		panic("illegal command")

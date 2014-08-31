@@ -1,5 +1,10 @@
 # Tideland Go Application Support
 
+## 2014-08-25
+
+- scene package has no v1.2.0
+- improved usability
+
 ## 2014-08-23
 
 - scene package has no v1.1.0

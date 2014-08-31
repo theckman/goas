@@ -47,20 +47,25 @@
 //
 //    scn.Abort(myError)
 //
-// Another functionality of the scene is the signalling of a topic. So
+// Another functionality of the scene is the signaling of a topic. So
 // multiple goroutines can wait for a signal with a topic, all will be
-// notified after the topic has been signalled. Additionally they can wait
+// notified after the topic has been signaled. Additionally they can wait
 // with a timeout.
 //
 //    go func() {
-//        err := scn.WaitSignal("foo")
+//        err := scn.WaitFlag("foo")
 //        ...
 //    }()
 //    go func() {
-//        err := scn.WaitSignal("foo", 5 * time.Second)
+//        err := scn.WaitFlagLimited("foo", 5 * time.Second)
 //        ...
 //    }()
-//    err := scn.Signal("foo")
+//    err := scn.Flag("foo")
+//
+// In case a flag is already signaled wait immediatily returns. Store()
+// and Flag() can also be combined to StoreAndFlag(). This way the key
+// will be used as flag topic and a waiter knows that the information is
+// available.
 //
 // A scene knows two different timeouts. The first is the time of inactivity,
 // the second is the absolute maximum time of a scene.
@@ -88,7 +93,7 @@ import (
 
 // PackageVersion returns the version of the version package.
 func PackageVersion() version.Version {
-	return version.New(1, 1, 0)
+	return version.New(1, 2, 0)
 }
 
 // EOF
