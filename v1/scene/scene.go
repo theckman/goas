@@ -22,6 +22,12 @@ import (
 // SCENE
 //--------------------
 
+const (
+	Active    = loop.Running
+	Finishing = loop.Stopping
+	Over      = loop.Stopped
+)
+
 // CleanupFunc is a function for the cleanup of props after
 // a scene ended.
 type CleanupFunc func(key string, prop interface{}) error
@@ -71,6 +77,9 @@ type Scene interface {
 	// Wait blocks the caller until the scene ended and returns a
 	// possible error or nil.
 	Wait() error
+
+	// Status returns information about the current status of the scene.
+	Status() (int, error)
 
 	// Store stores a prop with a given key. The key must not exist.
 	Store(key string, prop interface{}) error
@@ -160,6 +169,11 @@ func (s *scene) Abort(err error) {
 // Wait is specified on the Scene interface.
 func (s *scene) Wait() error {
 	return s.backend.Wait()
+}
+
+// Status is specified on the Scene interface.
+func (s *scene) Status() (int, error) {
+	return s.backend.Error()
 }
 
 // Store is specified on the Scene interface.

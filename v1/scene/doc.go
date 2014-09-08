@@ -93,7 +93,7 @@ import (
 
 // PackageVersion returns the version of the version package.
 func PackageVersion() version.Version {
-	return version.New(1, 2, 0)
+	return version.New(1, 3, 0)
 }
 
 // EOF

@@ -47,8 +47,16 @@ func TestSimpleNoTimeout(t *testing.T) {
 	_, err = scn.Fetch("foo")
 	assert.True(scene.IsPropNotFoundError(err))
 
+	status, err := scn.Status()
+	assert.Nil(err)
+	assert.Equal(status, scene.Active)
+
 	err = scn.Stop()
 	assert.Nil(err)
+
+	status, err = scn.Status()
+	assert.Nil(err)
+	assert.Equal(status, scene.Over)
 }
 
 // TestAccessAfterStopping tests an access after the
@@ -146,6 +154,10 @@ func TestSimpleInactivityTimeout(t *testing.T) {
 	foo, err := scn.Fetch("foo")
 	assert.True(scene.IsTimeoutError(err))
 	assert.Nil(foo)
+
+	status, err := scn.Status()
+	assert.True(scene.IsTimeoutError(err))
+	assert.Equal(status, scene.Over)
 
 	err = scn.Stop()
 	assert.True(scene.IsTimeoutError(err))
