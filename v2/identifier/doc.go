@@ -15,4 +15,21 @@
 // the identifier is unique in its context.
 package identifier
 
+//--------------------
+// IMPORTS
+//--------------------
+
+import (
+	"github.com/tideland/goas/v1/version"
+)
+
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(2, 1, 1)
+}
+
 // EOF
