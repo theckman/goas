@@ -14,6 +14,7 @@ package scene
 import (
 	"time"
 
+	"github.com/tideland/goas/v2/identifier"
 	"github.com/tideland/goas/v2/loop"
 	"github.com/tideland/goas/v3/errors"
 )
@@ -67,6 +68,9 @@ type envelope struct {
 // for a continuous flow of operations and then passed between all
 // functions and goroutine which are actors of the scene.
 type Scene interface {
+	// ID returns the unique ID of the scene.
+	ID() identifier.UUID
+
 	// Stop tells the scene to end and waits until it is done.
 	Stop() error
 
@@ -127,6 +131,7 @@ type Scene interface {
 
 // scene implements Scene.
 type scene struct {
+	id          identifier.UUID
 	props       map[string]*box
 	flags       map[string]bool
 	signalings  map[string][]chan struct{}
@@ -145,6 +150,7 @@ func Start() Scene {
 // and an absolute timeout. They may be zero.
 func StartLimited(inactivity, absolute time.Duration) Scene {
 	s := &scene{
+		id:          identifier.NewUUID(),
 		props:       make(map[string]*box),
 		flags:       make(map[string]bool),
 		signalings:  make(map[string][]chan struct{}),
@@ -154,6 +160,11 @@ func StartLimited(inactivity, absolute time.Duration) Scene {
 	}
 	s.backend = loop.Go(s.backendLoop)
 	return s
+}
+
+// ID is specified on the Scene interface.
+func (s *scene) ID() identifier.UUID {
+	return s.id.Copy()
 }
 
 // Stop is specified on the Scene interface.

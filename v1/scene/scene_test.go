@@ -30,6 +30,8 @@ func TestSimpleNoTimeout(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, false)
 	scn := scene.Start()
 
+	id := scn.ID()
+	assert.Length(id, 16)
 	err := scn.Store("foo", 4711)
 	assert.Nil(err)
 	foo, err := scn.Fetch("foo")
