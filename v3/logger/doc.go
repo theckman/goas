@@ -9,4 +9,13 @@
 // way to log information with different levels and on different backends.
 package logger
 
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(3, 0, 1)
+}
+
 // EOF

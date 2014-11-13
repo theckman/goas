@@ -26,15 +26,6 @@ import (
 )
 
 //--------------------
-// VERSION
-//--------------------
-
-// PackageVersion returns the version of the version package.
-func PackageVersion() version.Version {
-	return version.New(3, 0, 0)
-}
-
-//--------------------
 // TYPES AND TYPE FUNCTIONS
 //--------------------
 
@@ -57,7 +48,7 @@ const (
 type FatalExiterFunc func()
 
 // OsFatalExiter exits the application with os.Exit and
-// the return coe -1.
+// the return code -1.
 func OsFatalExiter() {
 	os.Exit(-1)
 }
@@ -177,8 +168,9 @@ func Criticalf(format string, args ...interface{}) {
 }
 
 // Fatalf logs a message independant of any level. After
-// logging the message the application terminates with exit
-// code -1 to signal the error.
+// logging the message the functions calls the fatal exiter
+// function, which by default means exiting the application
+// with error code -1.
 func Fatalf(format string, args ...interface{}) {
 	logMux.Lock()
 	defer logMux.Unlock()
