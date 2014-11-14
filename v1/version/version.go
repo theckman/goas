@@ -29,11 +29,6 @@ const (
 // VERSION
 //--------------------
 
-// PackageVersion returns the version of the version package.
-func PackageVersion() Version {
-	return New(1, 0, 1)
-}
-
 // Version defines the interface of a version.
 type Version interface {
 	fmt.Stringer

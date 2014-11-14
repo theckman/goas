@@ -10,4 +10,13 @@
 // idea of semantic versioning.
 package version
 
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() Version {
+	return New(1, 0, 2)
+}
+
 // EOF
