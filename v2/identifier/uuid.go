@@ -14,9 +14,9 @@ package identifier
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
-
-	"github.com/tideland/goas/v3/errors"
 )
 
 //--------------------
@@ -29,6 +29,12 @@ type UUIDVersion byte
 const (
 	UUIDv3 UUIDVersion = 3
 	UUIDv4 UUIDVersion = 4
+	UUIDv5 UUIDVersion = 5
+
+	UUIDNamespaceDNS = iota
+	UUIDNamespaceURL
+	UUIDNamespaceOID
+	UUIDNamespaceX500
 )
 
 // UUID represents a universal identifier with 16 bytes.
@@ -47,13 +53,10 @@ func NewUUID() UUID {
 
 // NewUUIDv3 generates a new UUID based on version 3 (MD5 hash of a namespace
 // and a name).
-func NewUUIDv3(ns, name []byte) (UUID, error) {
+func NewUUIDv3(ns UUID, name []byte) (UUID, error) {
 	uuid := UUID{}
-	if ns == nil {
-		return uuid, errors.New(ErrInvalidNamespace, errorMessages)
-	}
 	hash := md5.New()
-	hash.Write([]byte(uuid[:]))
+	hash.Write(ns.dump())
 	hash.Write(name)
 	copy(uuid[:], hash.Sum([]byte{})[:16])
 
@@ -75,6 +78,20 @@ func NewUUIDv4() (UUID, error) {
 	return uuid, nil
 }
 
+// NewUUIDv5 generates a new UUID based on version 5 (SHA1 hash of a namespace
+// and a name).
+func NewUUIDv5(ns UUID, name []byte) (UUID, error) {
+	uuid := UUID{}
+	hash := sha1.New()
+	hash.Write(ns.dump())
+	hash.Write(name)
+	copy(uuid[:], hash.Sum([]byte{})[:16])
+
+	uuid.setVersion(UUIDv5)
+	uuid.setVariant()
+	return uuid, nil
+}
+
 // Version returns the version number of the UUID algorithm.
 func (uuid UUID) Version() UUIDVersion {
 	return UUIDVersion(uuid[6] >> 4)
@@ -89,6 +106,15 @@ func (uuid UUID) Copy() UUID {
 // Raw returns a copy of the UUID bytes.
 func (uuid UUID) Raw() [16]byte {
 	return [16]byte(uuid)
+}
+
+// dump creates a copy a byte slice.
+func (uuid UUID) dump() []byte {
+	dump := make([]byte, len(uuid))
+
+	copy(dump, uuid[:])
+
+	return dump
 }
 
 // String returns a hexadecimal string representation with
@@ -107,6 +133,26 @@ func (uuid UUID) setVersion(v UUIDVersion) {
 func (uuid UUID) setVariant() {
 	var variant byte = 8 << 4
 	uuid[8] = variant | (uuid[8] & 15)
+}
+
+// UUIDNamespace returns a namespace as UUID.
+func UUIDNamespace(nsId int) UUID {
+	var uuid UUID
+	var ns []byte
+	switch nsId {
+	case UUIDNamespaceDNS:
+		ns, _ = hex.DecodeString("6ba7b8109dad11d180b400c04fd430c8")
+	case UUIDNamespaceURL:
+		ns, _ = hex.DecodeString("6ba7b8119dad11d180b400c04fd430c8")
+	case UUIDNamespaceOID:
+		ns, _ = hex.DecodeString("6ba7b8129dad11d180b400c04fd430c8")
+	case UUIDNamespaceX500:
+		ns, _ = hex.DecodeString("6ba7b8149dad11d180b400c04fd430c8")
+	default:
+		panic("invalid UUID namespace identifier")
+	}
+	copy(uuid[:], ns)
+	return uuid
 }
 
 // EOF
