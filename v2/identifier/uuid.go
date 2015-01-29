@@ -23,13 +23,10 @@ import (
 // UUID
 //--------------------
 
-// UUIDVersion represents the version of a UUID.
-type UUIDVersion byte
-
 const (
-	UUIDv3 UUIDVersion = 3
-	UUIDv4 UUIDVersion = 4
-	UUIDv5 UUIDVersion = 5
+	UUIDv3 byte = 3
+	UUIDv4 byte = 4
+	UUIDv5 byte = 5
 
 	UUIDNamespaceDNS = iota
 	UUIDNamespaceURL
@@ -93,8 +90,8 @@ func NewUUIDv5(ns UUID, name []byte) (UUID, error) {
 }
 
 // Version returns the version number of the UUID algorithm.
-func (uuid UUID) Version() UUIDVersion {
-	return UUIDVersion(uuid[6] >> 4)
+func (uuid UUID) Version() byte {
+	return uuid[6] & 0xf0 >> 4
 }
 
 // Copy returns a copy of the UUID.
@@ -124,15 +121,13 @@ func (uuid UUID) String() string {
 }
 
 // setVersion sets the version part of the UUID.
-func (uuid UUID) setVersion(v UUIDVersion) {
-	var version byte = byte(v) << 4
-	uuid[6] = version | (uuid[6] & 15)
+func (uuid *UUID) setVersion(v byte) {
+	uuid[6] = (uuid[6] & 0x0f) | (v << 4)
 }
 
 // setVariant sets the variant part of the UUID according to RfC 4122.
-func (uuid UUID) setVariant() {
-	var variant byte = 8 << 4
-	uuid[8] = variant | (uuid[8] & 15)
+func (uuid *UUID) setVariant() {
+	uuid[8] = (uuid[8] & 0x0f) | (8 << 4)
 }
 
 // UUIDNamespace returns a namespace as UUID.

@@ -1,6 +1,6 @@
 // Tideland Go Application Support - Identifier - Unit Tests
 //
-// Copyright (C) 2009-2014 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2009-2015 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -21,31 +21,6 @@ import (
 //--------------------
 // TESTS
 //--------------------
-
-// Test the UUID.
-func TestUUID(t *testing.T) {
-	assert := asserts.NewTestingAssertion(t, true)
-	// Asserts.
-	uuid := identifier.NewUUID()
-	uuidStr := uuid.String()
-	assert.Equal(len(uuid), 16, "UUID length has to be 16")
-	assert.Match(uuidStr, "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "UUID has to match")
-	// Check for unique creation, but only weak test.
-	uuids := make(map[string]bool)
-	for i := 0; i < 1000000; i++ {
-		uuid = identifier.NewUUID()
-		uuidStr = uuid.String()
-		assert.False(uuids[uuidStr], "UUID collision must not happen")
-		uuids[uuidStr] = true
-	}
-	// Check for copy.
-	uuidA := identifier.NewUUID()
-	uuidB := uuidA.Copy()
-	for i := 0; i < len(uuidA); i++ {
-		uuidA[i] = 0
-	}
-	assert.Different(uuidA, uuidB)
-}
 
 // Test the creation of identifiers based on types.
 func TestTypeAsIdentifierPart(t *testing.T) {
