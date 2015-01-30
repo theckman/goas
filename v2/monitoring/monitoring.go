@@ -36,15 +36,6 @@ const (
 )
 
 //--------------------
-// VERSION
-//--------------------
-
-// PackageVersion returns the version of the version package.
-func PackageVersion() version.Version {
-	return version.New(2, 1, 0)
-}
-
-//--------------------
 // SYSTEM MONITOR
 //--------------------
 

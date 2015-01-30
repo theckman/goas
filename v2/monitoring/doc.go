@@ -1,6 +1,6 @@
 // Tideland Go Application Support - Monitoring
 //
-// Copyright (C) 2009-2014 Frank Mueller / Tideland / Oldenburg / Germany
+// Copyright (C) 2009-2015 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
@@ -11,5 +11,14 @@
 // runtime. So execution times can be measured and analyzed, stay-set
 // indicators integrated and dynamic control value retrieval provided.
 package monitoring
+
+//--------------------
+// VERSION
+//--------------------
+
+// PackageVersion returns the version of the version package.
+func PackageVersion() version.Version {
+	return version.New(2, 1, 1)
+}
 
 // EOF
