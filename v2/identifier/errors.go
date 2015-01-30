@@ -20,21 +20,29 @@ import (
 //--------------------
 
 const (
-	ErrInvalidNamespace = iota + 1
+	ErrInvalidHexLength = iota + 1
+	ErrInvalidHexValue
 )
 
 var errorMessages = errors.Messages{
-	ErrInvalidNamespace: "invalid namespace",
+	ErrInvalidHexLength: "invalid length of hex string, has to be 32",
+	ErrInvalidHexValue:  "invalid value of hex string",
 }
 
 //--------------------
 // TESTING
 //--------------------
 
-// IsInvalidNamespaceError returns true, if the error signals that
-// the namespace is invalid.
-func IsInvalidNamespaceError(err error) bool {
-	return errors.IsError(err, ErrInvalidNamespace)
+// IsInvalidHexLengthError returns true, if the error signals that
+// the passed hex string for a UUID hasn't the correct size of 32.
+func IsInvalidHexLengthError(err error) bool {
+	return errors.IsError(err, ErrInvalidHexLength)
+}
+
+// IsInvalidHexValueError returns true, if the error signals an
+// invalid hex string as input.
+func IsInvalidHexValueError(err error) bool {
+	return errors.IsError(err, ErrInvalidHexValue)
 }
 
 // EOF

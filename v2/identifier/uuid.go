@@ -15,8 +15,13 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha1"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"net"
+	"time"
+
+	"github.com/tideland/goas/v3/errors"
 )
 
 //--------------------
@@ -24,14 +29,10 @@ import (
 //--------------------
 
 const (
+	UUIDv1 byte = 1
 	UUIDv3 byte = 3
 	UUIDv4 byte = 4
 	UUIDv5 byte = 5
-
-	UUIDNamespaceDNS = iota
-	UUIDNamespaceURL
-	UUIDNamespaceOID
-	UUIDNamespaceX500
 )
 
 // UUID represents a universal identifier with 16 bytes.
@@ -46,6 +47,33 @@ func NewUUID() UUID {
 		panic(err)
 	}
 	return uuid
+}
+
+// NewUUIDv1 generates a new UUID based on version 1 (MAC address and
+// date-time).
+func NewUUIDv1() (UUID, error) {
+	uuid := UUID{}
+	epoch := int64(0x01b21dd213814000)
+	now := uint64(time.Now().UnixNano()/100 + epoch)
+
+	clockSeqRand := [2]byte{}
+	rand.Read(clockSeqRand[:])
+	clockSeq := binary.LittleEndian.Uint16(clockSeqRand[:])
+
+	timeLow := uint32(now & (0x100000000 - 1))
+	timeMid := uint16((now >> 32) & 0xffff)
+	timeHighVer := uint16((now >> 48) & 0x0fff)
+	clockSeq &= 0x3fff
+
+	binary.LittleEndian.PutUint32(uuid[0:4], timeLow)
+	binary.LittleEndian.PutUint16(uuid[4:6], timeMid)
+	binary.LittleEndian.PutUint16(uuid[6:8], timeHighVer)
+	binary.LittleEndian.PutUint16(uuid[8:10], clockSeq)
+	copy(uuid[10:16], cachedMACAddress)
+
+	uuid.setVersion(UUIDv1)
+	uuid.setVariant()
+	return uuid, nil
 }
 
 // NewUUIDv3 generates a new UUID based on version 3 (MD5 hash of a namespace
@@ -86,6 +114,21 @@ func NewUUIDv5(ns UUID, name []byte) (UUID, error) {
 
 	uuid.setVersion(UUIDv5)
 	uuid.setVariant()
+	return uuid, nil
+}
+
+// NewUUIDByHex creates a UUID based on the passed hex string which has to
+// have the length of 32 bytes.
+func NewUUIDByHex(source string) (UUID, error) {
+	uuid := UUID{}
+	if len([]byte(source)) != 32 {
+		return uuid, errors.New(ErrInvalidHexLength, errorMessages)
+	}
+	raw, err := hex.DecodeString(source)
+	if err != nil {
+		return uuid, errors.Annotate(err, ErrInvalidHexValue, errorMessages)
+	}
+	copy(uuid[:], raw)
 	return uuid, nil
 }
 
@@ -130,24 +173,63 @@ func (uuid *UUID) setVariant() {
 	uuid[8] = (uuid[8] & 0x0f) | (8 << 4)
 }
 
-// UUIDNamespace returns a namespace as UUID.
-func UUIDNamespace(nsId int) UUID {
-	var uuid UUID
-	var ns []byte
-	switch nsId {
-	case UUIDNamespaceDNS:
-		ns, _ = hex.DecodeString("6ba7b8109dad11d180b400c04fd430c8")
-	case UUIDNamespaceURL:
-		ns, _ = hex.DecodeString("6ba7b8119dad11d180b400c04fd430c8")
-	case UUIDNamespaceOID:
-		ns, _ = hex.DecodeString("6ba7b8129dad11d180b400c04fd430c8")
-	case UUIDNamespaceX500:
-		ns, _ = hex.DecodeString("6ba7b8149dad11d180b400c04fd430c8")
-	default:
-		panic("invalid UUID namespace identifier")
-	}
-	copy(uuid[:], ns)
+// UUIDNamespaceDNS returns the DNS namespace UUID.
+func UUIDNamespaceDNS() UUID {
+	uuid, _ := NewUUIDByHex("6ba7b8109dad11d180b400c04fd430c8")
 	return uuid
+}
+
+// UUIDNamespaceURL returns the URL namespace UUID.
+func UUIDNamespaceURL() UUID {
+	uuid, _ := NewUUIDByHex("6ba7b8119dad11d180b400c04fd430c8")
+	return uuid
+}
+
+// UUIDNamespaceOID returns the OID namespace UUID.
+func UUIDNamespaceOID() UUID {
+	uuid, _ := NewUUIDByHex("6ba7b8129dad11d180b400c04fd430c8")
+	return uuid
+}
+
+// UUIDNamespaceX500 returns the X.500 namespace UUID.
+func UUIDNamespaceX500() UUID {
+	uuid, _ := NewUUIDByHex("6ba7b8149dad11d180b400c04fd430c8")
+	return uuid
+}
+
+//--------------------
+// PRIVATE HELPERS
+//--------------------
+
+// macAddress retrieves the MAC address of the computer.
+func macAddress() []byte {
+	address := [6]byte{}
+	ifaces, err := net.Interfaces()
+	// Try to get address from interfaces.
+	if err == nil {
+		set := false
+		for _, iface := range ifaces {
+			if len(iface.HardwareAddr.String()) != 0 {
+				copy(address[:], []byte(iface.HardwareAddr))
+				set = true
+				break
+			}
+		}
+		if set {
+			// Had success.
+			return address[:]
+		}
+	}
+	// Need a random address.
+	rand.Read(address[:])
+	address[0] |= 0x01
+	return address[:]
+}
+
+var cachedMACAddress []byte
+
+func init() {
+	cachedMACAddress = macAddress()
 }
 
 // EOF
