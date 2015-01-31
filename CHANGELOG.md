@@ -1,5 +1,9 @@
 # Tideland Go Application Support
 
+## 2015-01-31
+
+- added UUID versions 1, 3, and 5 to identifier package
+
 ## 2014-08-25
 
 - scene package has no v1.2.0

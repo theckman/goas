@@ -37,10 +37,16 @@ This easily can be tested with `errors.IsError(err, code)`.
 ### Identifier
 
 The identifier packge provides different ways to produce identifiers like UUIDs. The
-UUID generation follows version 4 (based on random numbers), other identifier types are
-based on passed data or types. Here the individual parts are harmonized and concatenated
-by the passed seperators. It is the users responsibility to check if the identifier is
-unique in its context.
+UUID generation provides
+
+- version 1 based on timestamp and MAC address,
+- version 3 based on MD5 hash of namespace UUID and a value,
+- version 4 based on random numbers, and
+- version 5 based on SHA1 hash of namespace UUID and a value.
+
+Other identifier types are based on passed data or types. Here the individual parts are 
+harmonized and concatenated by the passed seperators. It is the users responsibility to 
+check if the identifier is unique in its context.
 
 [![GoDoc](https://godoc.org/github.com/tideland/goas/v2/identifier?status.svg)](https://godoc.org/github.com/tideland/goas/v2/identifier)
 
