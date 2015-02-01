@@ -33,6 +33,11 @@ const (
 	UUIDv3 byte = 3
 	UUIDv4 byte = 4
 	UUIDv5 byte = 5
+
+	UUIDVariantNCS       byte = 0
+	UUIDVariantRFC4122   byte = 4
+	UUIDVariantMicrosoft byte = 6
+	UUIDVariantFuture    byte = 7
 )
 
 // UUID represents a universal identifier with 16 bytes.
@@ -166,6 +171,10 @@ func (uuid UUID) String() string {
 // setVersion sets the version part of the UUID.
 func (uuid *UUID) setVersion(v byte) {
 	uuid[6] = (uuid[6] & 0x0f) | (v << 4)
+}
+
+func (uuid *UUID) setVariantNew(v byte) {
+	uuid[8] = (uuid[8] & 0x1f) | (v << 5)
 }
 
 // setVariant sets the variant part of the UUID according to RfC 4122.
