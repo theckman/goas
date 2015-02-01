@@ -77,7 +77,7 @@ func NewUUIDv1() (UUID, error) {
 	copy(uuid[10:16], cachedMACAddress)
 
 	uuid.setVersion(UUIDv1)
-	uuid.setVariant()
+	uuid.setVariant(UUIDVariantRFC4122)
 	return uuid, nil
 }
 
@@ -91,7 +91,7 @@ func NewUUIDv3(ns UUID, name []byte) (UUID, error) {
 	copy(uuid[:], hash.Sum([]byte{})[:16])
 
 	uuid.setVersion(UUIDv3)
-	uuid.setVariant()
+	uuid.setVariant(UUIDVariantRFC4122)
 	return uuid, nil
 }
 
@@ -104,7 +104,7 @@ func NewUUIDv4() (UUID, error) {
 	}
 
 	uuid.setVersion(UUIDv4)
-	uuid.setVariant()
+	uuid.setVariant(UUIDVariantRFC4122)
 	return uuid, nil
 }
 
@@ -118,7 +118,7 @@ func NewUUIDv5(ns UUID, name []byte) (UUID, error) {
 	copy(uuid[:], hash.Sum([]byte{})[:16])
 
 	uuid.setVersion(UUIDv5)
-	uuid.setVariant()
+	uuid.setVariant(UUIDVariantRFC4122)
 	return uuid, nil
 }
 
@@ -140,6 +140,11 @@ func NewUUIDByHex(source string) (UUID, error) {
 // Version returns the version number of the UUID algorithm.
 func (uuid UUID) Version() byte {
 	return uuid[6] & 0xf0 >> 4
+}
+
+// Variant returns the variant of the UUID.
+func (uuid UUID) Variant() byte {
+	return uuid[8] & 0xe0 >> 5
 }
 
 // Copy returns a copy of the UUID.
@@ -173,13 +178,9 @@ func (uuid *UUID) setVersion(v byte) {
 	uuid[6] = (uuid[6] & 0x0f) | (v << 4)
 }
 
-func (uuid *UUID) setVariantNew(v byte) {
+// setVariant sets the variant part of the UUID.
+func (uuid *UUID) setVariant(v byte) {
 	uuid[8] = (uuid[8] & 0x1f) | (v << 5)
-}
-
-// setVariant sets the variant part of the UUID according to RfC 4122.
-func (uuid *UUID) setVariant() {
-	uuid[8] = (uuid[8] & 0x0f) | (8 << 4)
 }
 
 // UUIDNamespaceDNS returns the DNS namespace UUID.
