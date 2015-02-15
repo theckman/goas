@@ -13,6 +13,14 @@
 package monitoring
 
 //--------------------
+// IMPORTS
+//--------------------
+
+import (
+	"github.com/tideland/goas/v1/version"
+)
+
+//--------------------
 // VERSION
 //--------------------
 

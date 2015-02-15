@@ -15,7 +15,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tideland/goas/v1/version"
 	"github.com/tideland/goas/v2/logger"
 	"github.com/tideland/goas/v2/loop"
 	"github.com/tideland/goas/v3/errors"
