@@ -21,8 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/tideland/goas/v1/version"
 )
 
 //--------------------

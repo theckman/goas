@@ -9,6 +9,8 @@
 // way to log information with different levels and on different backends.
 package logger
 
+import "github.com/tideland/goas/v1/version"
+
 //--------------------
 // VERSION
 //--------------------
